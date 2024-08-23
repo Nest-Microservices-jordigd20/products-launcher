@@ -1,0 +1,57 @@
+version: "3"
+
+services:
+  nats-server:
+    image: nats:latest
+    ports:
+      - "8222:8222"
+
+  client-gateway:
+    build: ./client-gateway
+    ports:
+      - "${CLIENT_GATEWAY_PORT}:3000"
+    volumes:
+      - ./client-gateway/src:/usr/src/app/src
+    command: pnpm run start:dev
+    environment:
+      - PORT=3000 # Este puerto realmente da igual y podría ser el mismo en todos los contenedores, ya que el puerto que se expone es el de la izquierda "3010:3000"
+      - NATS_SERVERS=nats://nats-server:4222
+
+  products-ms:
+    build: ./products-ms
+    ports:
+      - "${PRODUCTS_MS_PORT}:3001"
+    volumes:
+      - ./products-ms/src:/usr/src/app/src
+    command: pnpm run start:dev
+    environment:
+      - PORT=3001
+      - NATS_SERVERS=nats://nats-server:4222
+      - DATABASE_URL=file:./dev.db
+
+  orders-ms:
+    depends_on:
+      - orders-db
+    build: ./orders-ms
+    ports:
+      - "${ORDERS_MS_PORT}:3002"
+    volumes:
+      - ./orders-ms/src:/usr/src/app/src
+    command: pnpm run start:dev
+    environment:
+      - PORT=3002
+      - NATS_SERVERS=nats://nats-server:4222
+      - DATABASE_URL=postgres://${ORDERS_DB_USER}:${ORDERS_DB_PASSWORD}@ordersms_database:5432/${ORDERS_DB_NAME}
+
+  orders-db:
+    image: postgres:15.3
+    restart: always
+    ports:
+      - 5432:5432
+    environment:
+      POSTGRES_DB: ${ORDERS_DB_NAME}
+      POSTGRES_USER: ${ORDERS_DB_USER}
+      POSTGRES_PASSWORD: ${ORDERS_DB_PASSWORD}
+    container_name: ordersms_database
+    volumes:
+      - ./orders-ms/postgres:/var/lib/postgresql/data
