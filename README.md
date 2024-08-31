@@ -17,6 +17,17 @@ git submodule update --init --recursive
 $ docker compose up --build
 ```
 
+## Production environment
+
+1. Clonate the repository
+2. Creat a `.env` file based on the `.env.template` file.
+3. Run the following command:
+
+```bash
+$ docker compose -f docker-compose.prod.yml build
+```
+
+
 ## Git Submodules
 
 1. To add a submodule, run the following command, where `<repository_url>` is the URL of the repository you want to add and `<directory_name>` is the name of the directory where the repository will be cloned. (The directory must not exist)
